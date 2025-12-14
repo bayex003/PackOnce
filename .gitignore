@@ -1,0 +1,13 @@
+DerivedData/
+build/
+*.xcuserstate
+*.xcuserdata/
+*.xcworkspace/
+.swiftpm/
+Pods/
+Carthage/
+*.xcarchive
+*.ipa
+*.dSYM
+*.framework
+*.xcframework

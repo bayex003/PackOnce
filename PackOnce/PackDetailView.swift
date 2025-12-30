@@ -8,6 +8,7 @@ struct PackDetailView: View {
         var category: String
         var note: String
         var isPacked: Bool
+        let templateItemID: UUID?
     }
 
     struct PackDetailSection: Identifiable {
@@ -16,6 +17,14 @@ struct PackDetailView: View {
         let isPinned: Bool
         let isLastMinute: Bool
         var items: [PackDetailItem]
+    }
+
+    struct TemplateItem: Identifiable {
+        let id: UUID
+        let name: String
+        var quantity: Int
+        var category: String
+        var note: String
     }
 
     enum PackFilter: String, CaseIterable, Identifiable {
@@ -27,18 +36,40 @@ struct PackDetailView: View {
     }
 
     let packName: String
+    private static let templateSeedItems: [TemplateItem] = [
+        TemplateItem(id: UUID(), name: "Passport", quantity: 1, category: "Essentials", note: "In top drawer"),
+        TemplateItem(id: UUID(), name: "Charger & Adapter", quantity: 1, category: "Tech", note: ""),
+        TemplateItem(id: UUID(), name: "T-Shirts", quantity: 5, category: "Clothes", note: ""),
+        TemplateItem(id: UUID(), name: "Socks", quantity: 7, category: "Clothes", note: "")
+    ]
+
     @State private var selectedFilter: PackFilter = .all
     @State private var moveCheckedToBottom: Bool = true
     @State private var addItemText: String = ""
     @State private var editSelection: EditItemSelection?
+    @State private var templateItems: [TemplateItem] = Self.templateSeedItems
     @State private var sections: [PackDetailSection] = [
         PackDetailSection(
             title: "Essentials (Pinned)",
             isPinned: true,
             isLastMinute: false,
             items: [
-                PackDetailItem(name: "Passport", quantity: 1, category: "Essentials", note: "In top drawer", isPacked: false),
-                PackDetailItem(name: "Charger & Adapter", quantity: 1, category: "Tech", note: "", isPacked: false)
+                PackDetailItem(
+                    name: "Passport",
+                    quantity: 1,
+                    category: "Essentials",
+                    note: "In top drawer",
+                    isPacked: false,
+                    templateItemID: PackDetailView.templateSeedItems[0].id
+                ),
+                PackDetailItem(
+                    name: "Charger & Adapter",
+                    quantity: 1,
+                    category: "Tech",
+                    note: "",
+                    isPacked: false,
+                    templateItemID: PackDetailView.templateSeedItems[1].id
+                )
             ]
         ),
         PackDetailSection(
@@ -46,7 +77,14 @@ struct PackDetailView: View {
             isPinned: false,
             isLastMinute: true,
             items: [
-                PackDetailItem(name: "Toothbrush", quantity: 1, category: "Toiletries", note: "Still wet, pack last", isPacked: false)
+                PackDetailItem(
+                    name: "Toothbrush",
+                    quantity: 1,
+                    category: "Toiletries",
+                    note: "Still wet, pack last",
+                    isPacked: false,
+                    templateItemID: nil
+                )
             ]
         ),
         PackDetailSection(
@@ -54,9 +92,30 @@ struct PackDetailView: View {
             isPinned: false,
             isLastMinute: false,
             items: [
-                PackDetailItem(name: "T-Shirts", quantity: 5, category: "Clothes", note: "", isPacked: true),
-                PackDetailItem(name: "Socks", quantity: 7, category: "Clothes", note: "", isPacked: false),
-                PackDetailItem(name: "Swimwear", quantity: 2, category: "Clothes", note: "", isPacked: false)
+                PackDetailItem(
+                    name: "T-Shirts",
+                    quantity: 5,
+                    category: "Clothes",
+                    note: "",
+                    isPacked: true,
+                    templateItemID: PackDetailView.templateSeedItems[2].id
+                ),
+                PackDetailItem(
+                    name: "Socks",
+                    quantity: 7,
+                    category: "Clothes",
+                    note: "",
+                    isPacked: false,
+                    templateItemID: PackDetailView.templateSeedItems[3].id
+                ),
+                PackDetailItem(
+                    name: "Swimwear",
+                    quantity: 2,
+                    category: "Clothes",
+                    note: "",
+                    isPacked: false,
+                    templateItemID: nil
+                )
             ]
         ),
         PackDetailSection(
@@ -64,9 +123,30 @@ struct PackDetailView: View {
             isPinned: false,
             isLastMinute: false,
             items: [
-                PackDetailItem(name: "Sunscreen", quantity: 1, category: "Toiletries", note: "", isPacked: true),
-                PackDetailItem(name: "Razor", quantity: 1, category: "Toiletries", note: "", isPacked: true),
-                PackDetailItem(name: "Skincare kit", quantity: 1, category: "Toiletries", note: "", isPacked: false)
+                PackDetailItem(
+                    name: "Sunscreen",
+                    quantity: 1,
+                    category: "Toiletries",
+                    note: "",
+                    isPacked: true,
+                    templateItemID: nil
+                ),
+                PackDetailItem(
+                    name: "Razor",
+                    quantity: 1,
+                    category: "Toiletries",
+                    note: "",
+                    isPacked: true,
+                    templateItemID: nil
+                ),
+                PackDetailItem(
+                    name: "Skincare kit",
+                    quantity: 1,
+                    category: "Toiletries",
+                    note: "",
+                    isPacked: false,
+                    templateItemID: nil
+                )
             ]
         ),
         PackDetailSection(
@@ -74,10 +154,38 @@ struct PackDetailView: View {
             isPinned: false,
             isLastMinute: false,
             items: [
-                PackDetailItem(name: "Camera", quantity: 2, category: "Tech", note: "Charge battery", isPacked: true),
-                PackDetailItem(name: "Earbuds", quantity: 2, category: "Tech", note: "", isPacked: false),
-                PackDetailItem(name: "Power bank", quantity: 2, category: "Tech", note: "", isPacked: false),
-                PackDetailItem(name: "E-reader", quantity: 2, category: "Tech", note: "", isPacked: true)
+                PackDetailItem(
+                    name: "Camera",
+                    quantity: 2,
+                    category: "Tech",
+                    note: "Charge battery",
+                    isPacked: true,
+                    templateItemID: nil
+                ),
+                PackDetailItem(
+                    name: "Earbuds",
+                    quantity: 2,
+                    category: "Tech",
+                    note: "",
+                    isPacked: false,
+                    templateItemID: nil
+                ),
+                PackDetailItem(
+                    name: "Power bank",
+                    quantity: 2,
+                    category: "Tech",
+                    note: "",
+                    isPacked: false,
+                    templateItemID: nil
+                ),
+                PackDetailItem(
+                    name: "E-reader",
+                    quantity: 2,
+                    category: "Tech",
+                    note: "",
+                    isPacked: true,
+                    templateItemID: nil
+                )
             ]
         ),
         PackDetailSection(
@@ -85,11 +193,46 @@ struct PackDetailView: View {
             isPinned: false,
             isLastMinute: false,
             items: [
-                PackDetailItem(name: "Travel journal", quantity: 2, category: "Extras", note: "", isPacked: true),
-                PackDetailItem(name: "Reusable bag", quantity: 3, category: "Extras", note: "", isPacked: true),
-                PackDetailItem(name: "Snacks", quantity: 4, category: "Extras", note: "Flight friendly", isPacked: false),
-                PackDetailItem(name: "Compact umbrella", quantity: 2, category: "Extras", note: "", isPacked: true),
-                PackDetailItem(name: "Guidebook", quantity: 3, category: "Extras", note: "", isPacked: false)
+                PackDetailItem(
+                    name: "Travel journal",
+                    quantity: 2,
+                    category: "Extras",
+                    note: "",
+                    isPacked: true,
+                    templateItemID: nil
+                ),
+                PackDetailItem(
+                    name: "Reusable bag",
+                    quantity: 3,
+                    category: "Extras",
+                    note: "",
+                    isPacked: true,
+                    templateItemID: nil
+                ),
+                PackDetailItem(
+                    name: "Snacks",
+                    quantity: 4,
+                    category: "Extras",
+                    note: "Flight friendly",
+                    isPacked: false,
+                    templateItemID: nil
+                ),
+                PackDetailItem(
+                    name: "Compact umbrella",
+                    quantity: 2,
+                    category: "Extras",
+                    note: "",
+                    isPacked: true,
+                    templateItemID: nil
+                ),
+                PackDetailItem(
+                    name: "Guidebook",
+                    quantity: 3,
+                    category: "Extras",
+                    note: "",
+                    isPacked: false,
+                    templateItemID: nil
+                )
             ]
         )
     ]
@@ -140,15 +283,17 @@ struct PackDetailView: View {
                     quantity: item.quantity,
                     category: item.category,
                     notes: item.note,
+                    showsTemplateOption: item.templateItemID != nil,
                     onCancel: {
                         editSelection = nil
                     },
-                    onSave: { updatedQuantity, updatedCategory, updatedNotes in
+                    onSave: { updatedQuantity, updatedCategory, updatedNotes, applyToTemplate in
                         updateItem(
                             selection: selection,
                             quantity: updatedQuantity,
                             category: updatedCategory,
-                            note: updatedNotes
+                            note: updatedNotes,
+                            applyToTemplate: applyToTemplate
                         )
                         editSelection = nil
                     },
@@ -455,12 +600,29 @@ struct PackDetailView: View {
         return sections[selection.sectionIndex].items.first { $0.id == selection.itemID }
     }
 
-    private func updateItem(selection: EditItemSelection, quantity: Int, category: String, note: String) {
+    private func updateItem(
+        selection: EditItemSelection,
+        quantity: Int,
+        category: String,
+        note: String,
+        applyToTemplate: Bool
+    ) {
         guard sections.indices.contains(selection.sectionIndex) else { return }
         if let itemIndex = sections[selection.sectionIndex].items.firstIndex(where: { $0.id == selection.itemID }) {
             sections[selection.sectionIndex].items[itemIndex].quantity = quantity
             sections[selection.sectionIndex].items[itemIndex].category = category
             sections[selection.sectionIndex].items[itemIndex].note = note
+            if applyToTemplate, let templateID = sections[selection.sectionIndex].items[itemIndex].templateItemID {
+                updateTemplateItem(templateID: templateID, quantity: quantity, category: category, note: note)
+            }
+        }
+    }
+
+    private func updateTemplateItem(templateID: UUID, quantity: Int, category: String, note: String) {
+        if let templateIndex = templateItems.firstIndex(where: { $0.id == templateID }) {
+            templateItems[templateIndex].quantity = quantity
+            templateItems[templateIndex].category = category
+            templateItems[templateIndex].note = note
         }
     }
 
@@ -492,24 +654,34 @@ private struct EditItemView: View {
     ]
 
     let itemName: String
+    let showsTemplateOption: Bool
     let onCancel: () -> Void
-    let onSave: (Int, String, String) -> Void
+    let onSave: (Int, String, String, Bool) -> Void
     let onDelete: () -> Void
+
+    enum ApplyScope {
+        case packOnly
+        case packAndTemplate
+    }
 
     @State private var quantity: Int
     @State private var selectedCategory: String
     @State private var notes: String
+    @State private var applyScope: ApplyScope = .packOnly
+    @State private var showingTemplateConfirmation = false
 
     init(
         itemName: String,
         quantity: Int,
         category: String,
         notes: String,
+        showsTemplateOption: Bool,
         onCancel: @escaping () -> Void,
-        onSave: @escaping (Int, String, String) -> Void,
+        onSave: @escaping (Int, String, String, Bool) -> Void,
         onDelete: @escaping () -> Void
     ) {
         self.itemName = itemName
+        self.showsTemplateOption = showsTemplateOption
         self.onCancel = onCancel
         self.onSave = onSave
         self.onDelete = onDelete
@@ -528,6 +700,9 @@ private struct EditItemView: View {
                     itemCard
                     quantityCard
                     categoryCard
+                    if showsTemplateOption {
+                        applyChangesCard
+                    }
                     notesCard
                     deleteButton
                 }
@@ -557,7 +732,7 @@ private struct EditItemView: View {
             Spacer()
 
             Button("Save") {
-                onSave(quantity, selectedCategory, notes)
+                onSave(quantity, selectedCategory, notes, applyScope == .packAndTemplate)
             }
             .font(AppTheme.Typography.callout())
             .foregroundStyle(AppTheme.Colors.primary)
@@ -580,6 +755,83 @@ private struct EditItemView: View {
                 .fill(AppTheme.Colors.surface)
         )
         .applyShadow(AppTheme.Shadows.subtle)
+    }
+
+    private var applyChangesCard: some View {
+        VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
+            Text("APPLY CHANGES TO")
+                .font(AppTheme.Typography.caption())
+                .foregroundStyle(AppTheme.Colors.textSecondary)
+
+            VStack(spacing: AppTheme.Spacing.sm) {
+                applyOptionRow(
+                    title: "This pack only",
+                    subtitle: "Edits stay only in this pack.",
+                    isSelected: applyScope == .packOnly
+                ) {
+                    applyScope = .packOnly
+                }
+
+                applyOptionRow(
+                    title: "This pack + update template",
+                    subtitle: "Also updates the template item.",
+                    isSelected: applyScope == .packAndTemplate
+                ) {
+                    if applyScope != .packAndTemplate {
+                        showingTemplateConfirmation = true
+                    }
+                }
+            }
+        }
+        .padding(AppTheme.Spacing.lg)
+        .background(
+            RoundedRectangle(cornerRadius: AppTheme.Radii.xl)
+                .fill(AppTheme.Colors.surface)
+        )
+        .applyShadow(AppTheme.Shadows.subtle)
+        .alert("Update template too?", isPresented: $showingTemplateConfirmation) {
+            Button("Update Template", role: .destructive) {
+                applyScope = .packAndTemplate
+            }
+            Button("Cancel", role: .cancel) {
+                applyScope = .packOnly
+            }
+        } message: {
+            Text("This will affect future packs created from it.")
+        }
+    }
+
+    private func applyOptionRow(
+        title: String,
+        subtitle: String,
+        isSelected: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(alignment: .top, spacing: AppTheme.Spacing.md) {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(isSelected ? AppTheme.Colors.primary : AppTheme.Colors.textSecondary)
+
+                VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
+                    Text(title)
+                        .font(AppTheme.Typography.callout())
+                        .foregroundStyle(AppTheme.Colors.textPrimary)
+                    Text(subtitle)
+                        .font(AppTheme.Typography.caption())
+                        .foregroundStyle(AppTheme.Colors.textSecondary)
+                }
+
+                Spacer()
+            }
+            .padding(AppTheme.Spacing.md)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: AppTheme.Radii.md)
+                    .fill(AppTheme.Colors.surfaceElevated)
+            )
+        }
+        .buttonStyle(.plain)
     }
 
     private var quantityCard: some View {

@@ -25,7 +25,7 @@ struct RootView: View {
                 ZStack {
                     switch selectedTab {
                     case .packs:
-                        PacksPlaceholderView()
+                        PacksView()
                     case .templates:
                         TemplatesPlaceholderView()
                     case .settings:

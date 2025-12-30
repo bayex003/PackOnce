@@ -16,6 +16,7 @@ enum TabRoute: String, CaseIterable {
 
 struct RootView: View {
     @State private var selectedTab: TabRoute = .packs
+    @StateObject private var purchaseManager = PurchaseManager()
 
     var body: some View {
         ZStack {
@@ -29,7 +30,7 @@ struct RootView: View {
                     case .templates:
                         TemplatesPlaceholderView()
                     case .settings:
-                        SettingsPlaceholderView()
+                        SettingsView(purchaseManager: purchaseManager)
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

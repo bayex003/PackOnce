@@ -64,6 +64,7 @@ struct PacksView: View {
                     )
             }
             .buttonStyle(.plain)
+            .frame(minWidth: 44, minHeight: 44)
         }
     }
 
@@ -74,10 +75,12 @@ struct PacksView: View {
             Text("Find a pack...")
                 .font(AppTheme.Typography.body())
                 .foregroundStyle(AppTheme.Colors.textSecondary.opacity(0.85))
+                .fixedSize(horizontal: false, vertical: true)
             Spacer()
         }
         .padding(.horizontal, AppTheme.Spacing.md)
         .padding(.vertical, AppTheme.Spacing.sm)
+        .frame(minHeight: 44)
         .background(
             RoundedRectangle(cornerRadius: AppTheme.Radii.lg)
                 .fill(AppTheme.Colors.surfaceElevated)
@@ -93,6 +96,7 @@ struct PacksView: View {
                     FilterChip(title: filter, isSelected: selectedFilter == filter)
                 }
                 .buttonStyle(.plain)
+                .contentShape(Rectangle())
             }
         }
     }
@@ -113,6 +117,7 @@ struct PacksView: View {
                             QuickStartCard(template: template)
                         }
                         .buttonStyle(.plain)
+                        .frame(minHeight: 44)
                     }
 
                     QuickStartAddButton()
@@ -156,6 +161,7 @@ struct PacksView: View {
             .applyShadow(AppTheme.Shadows.glow)
         }
         .buttonStyle(.plain)
+        .frame(minHeight: 52)
         .padding(.bottom, AppTheme.Spacing.xl)
     }
 
@@ -223,6 +229,7 @@ private struct FilterChip: View {
             .background(
                 Capsule().fill(isSelected ? AppTheme.Colors.primary : AppTheme.Colors.surfaceElevated)
             )
+            .frame(minHeight: 44)
     }
 }
 
@@ -242,6 +249,7 @@ private struct QuickStartCard: View {
             Text(template.title)
                 .font(AppTheme.Typography.callout())
                 .foregroundStyle(AppTheme.Colors.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
 
             Text("+")
                 .font(AppTheme.Typography.callout())
@@ -249,6 +257,7 @@ private struct QuickStartCard: View {
         }
         .padding(.horizontal, AppTheme.Spacing.md)
         .padding(.vertical, AppTheme.Spacing.sm)
+        .frame(minHeight: 44)
         .background(
             RoundedRectangle(cornerRadius: AppTheme.Radii.md)
                 .fill(AppTheme.Colors.surface)
@@ -292,6 +301,7 @@ private struct QuickStartAddButton: View {
                 )
         }
         .buttonStyle(.plain)
+        .frame(minWidth: 44, minHeight: 44)
     }
 }
 
@@ -307,12 +317,16 @@ private struct PackCard: View {
                             Text(entry.name)
                                 .font(AppTheme.Typography.headline())
                                 .foregroundStyle(AppTheme.Colors.textPrimary)
+                                .lineLimit(2)
+                                .minimumScaleFactor(0.85)
+                                .fixedSize(horizontal: false, vertical: true)
                             TagBadgeView(title: entry.tagName)
                         }
 
                         HStack(spacing: AppTheme.Spacing.xs) {
                             Image(systemName: entry.subtitleIcon)
                             Text(entry.subtitle)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                         .font(AppTheme.Typography.caption())
                         .foregroundStyle(subtitleColor)

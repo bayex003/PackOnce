@@ -39,6 +39,7 @@ struct PrimaryCTAButton: View {
                 .applyShadow(AppTheme.Shadows.glow)
         }
         .buttonStyle(.plain)
+        .frame(minHeight: 44)
     }
 }
 
@@ -57,6 +58,7 @@ struct PillChip: View {
         .foregroundStyle(AppTheme.Colors.textSecondary)
         .padding(.horizontal, AppTheme.Spacing.md)
         .padding(.vertical, AppTheme.Spacing.xs)
+        .frame(minHeight: 32)
         .background(
             Capsule().fill(AppTheme.Colors.surfaceElevated)
         )
@@ -76,6 +78,7 @@ struct PillSegment: View {
             .background(
                 Capsule().fill(isSelected ? AppTheme.Colors.primary : AppTheme.Colors.surfaceElevated)
             )
+            .frame(minHeight: 44)
     }
 }
 
@@ -121,9 +124,11 @@ struct ToggleRow: View {
                 Text(title)
                     .font(AppTheme.Typography.callout())
                     .foregroundStyle(AppTheme.Colors.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
                 Text(subtitle)
                     .font(AppTheme.Typography.caption())
                     .foregroundStyle(AppTheme.Colors.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             Spacer()
             Toggle("", isOn: $isOn)
@@ -131,6 +136,7 @@ struct ToggleRow: View {
                 .tint(AppTheme.Colors.primary)
         }
         .padding(AppTheme.Spacing.md)
+        .frame(minHeight: 52)
         .background(
             RoundedRectangle(cornerRadius: AppTheme.Radii.md)
                 .fill(AppTheme.Colors.surface)
@@ -154,5 +160,6 @@ struct FloatingActionButton: View {
                 .applyShadow(AppTheme.Shadows.glow)
         }
         .buttonStyle(.plain)
+        .frame(minHeight: 52, minWidth: 52)
     }
 }

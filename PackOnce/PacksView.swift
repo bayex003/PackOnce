@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct PacksView: View {
+    @ObservedObject var purchaseManager: PurchaseManager
+    @Binding var exportPreference: ExportPreference
     @State private var selectedFilter = "In Progress"
 
     private let filters = ["In Progress", "Pinned", "Recent"]
@@ -93,7 +95,11 @@ struct PacksView: View {
                 HStack(spacing: AppTheme.Spacing.md) {
                     ForEach(SampleData.quickStartTemplates) { template in
                         NavigationLink {
-                            PackDetailView(packName: template.title)
+                            PackDetailView(
+                                packName: template.title,
+                                purchaseManager: purchaseManager,
+                                exportPreference: $exportPreference
+                            )
                         } label: {
                             QuickStartCard(template: template)
                         }
@@ -111,7 +117,11 @@ struct PacksView: View {
         VStack(spacing: AppTheme.Spacing.lg) {
             ForEach(SampleData.packListEntries) { pack in
                 NavigationLink {
-                    PackDetailView(packName: pack.name)
+                    PackDetailView(
+                        packName: pack.name,
+                        purchaseManager: purchaseManager,
+                        exportPreference: $exportPreference
+                    )
                 } label: {
                     PackCard(entry: pack)
                 }

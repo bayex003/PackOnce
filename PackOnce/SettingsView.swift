@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var purchaseManager: PurchaseManager
+    @Binding var exportPreference: ExportPreference
     @State private var moveCheckedToBottom = true
     @State private var hapticFeedback = true
     @State private var uncheckAllOnReset = false
@@ -48,9 +49,11 @@ struct SettingsView: View {
                         SettingsActionRow(
                             icon: "square.and.arrow.up",
                             title: "Export Defaults",
-                            trailingText: "PDF",
+                            trailingText: exportPreference.rawValue,
                             showsChevron: true
-                        ) {}
+                        ) {
+                            exportPreference.toggle()
+                        }
                     }
                 }
 
@@ -341,13 +344,17 @@ private struct SettingsIcon: View {
 
 private struct SettingsPreviewWrapper: View {
     @StateObject private var purchaseManager = PurchaseManager(isProActive: true)
+    @State private var exportPreference: ExportPreference = .pdf
 
     var body: some View {
         VStack(spacing: AppTheme.Spacing.md) {
             Toggle("Debug: Pro Active", isOn: $purchaseManager.isProActive)
                 .tint(AppTheme.Colors.primary)
                 .padding(.horizontal, AppTheme.Spacing.xl)
-            SettingsView(purchaseManager: purchaseManager)
+            SettingsView(
+                purchaseManager: purchaseManager,
+                exportPreference: $exportPreference
+            )
         }
         .background(AppBackgroundView())
     }

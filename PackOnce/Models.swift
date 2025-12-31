@@ -46,6 +46,15 @@ struct QuickStartTemplate: Identifiable {
     let accent: String
 }
 
+enum ExportPreference: String, CaseIterable {
+    case text = "Text"
+    case pdf = "PDF"
+
+    mutating func toggle() {
+        self = self == .text ? .pdf : .text
+    }
+}
+
 enum SampleData {
     static let packs: [Pack] = [
         Pack(name: "Alpine Escape", itemCount: 18, completion: 0.72, tags: ["Hiking", "Cold"]),

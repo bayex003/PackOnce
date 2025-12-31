@@ -17,6 +17,7 @@ enum TabRoute: String, CaseIterable {
 struct RootView: View {
     @State private var selectedTab: TabRoute = .packs
     @StateObject private var purchaseManager = PurchaseManager()
+    @State private var exportPreference: ExportPreference = .pdf
 
     var body: some View {
         ZStack {
@@ -26,11 +27,17 @@ struct RootView: View {
                 ZStack {
                     switch selectedTab {
                     case .packs:
-                        PacksView()
+                        PacksView(
+                            purchaseManager: purchaseManager,
+                            exportPreference: $exportPreference
+                        )
                     case .templates:
                         TemplatesPlaceholderView()
                     case .settings:
-                        SettingsView(purchaseManager: purchaseManager)
+                        SettingsView(
+                            purchaseManager: purchaseManager,
+                            exportPreference: $exportPreference
+                        )
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

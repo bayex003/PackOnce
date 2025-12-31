@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct PackDetailView: View {
     struct PackDetailItem: Identifiable {
@@ -36,6 +37,8 @@ struct PackDetailView: View {
     }
 
     let packName: String
+    @ObservedObject var purchaseManager: PurchaseManager
+    @Binding var exportPreference: ExportPreference
     private static let templateSeedItems: [TemplateItem] = [
         TemplateItem(id: UUID(), name: "Passport", quantity: 1, category: "Essentials", note: "In top drawer"),
         TemplateItem(id: UUID(), name: "Charger & Adapter", quantity: 1, category: "Tech", note: ""),
@@ -47,6 +50,9 @@ struct PackDetailView: View {
     @State private var moveCheckedToBottom: Bool = true
     @State private var addItemText: String = ""
     @State private var editSelection: EditItemSelection?
+    @State private var showingShareSheet = false
+    @State private var shareItems: [Any] = []
+    @State private var showingPaywall = false
     @State private var templateItems: [TemplateItem] = Self.templateSeedItems
     @State private var sections: [PackDetailSection] = [
         PackDetailSection(
@@ -276,6 +282,12 @@ struct PackDetailView: View {
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarHidden(true)
+        .sheet(isPresented: $showingShareSheet) {
+            ShareSheet(activityItems: shareItems)
+        }
+        .sheet(isPresented: $showingPaywall) {
+            PaywallStubView()
+        }
         .sheet(item: $editSelection) { selection in
             if let item = itemForSelection(selection) {
                 EditItemView(
@@ -329,7 +341,18 @@ struct PackDetailView: View {
 
             Spacer()
 
-            Button {} label: {
+            Menu {
+                Button {
+                    shareAsText()
+                } label: {
+                    Label("Share as Text", systemImage: exportPreference == .text ? "checkmark" : "text.alignleft")
+                }
+                Button {
+                    exportPDF()
+                } label: {
+                    Label("Export PDF", systemImage: exportPreference == .pdf ? "checkmark" : "doc.richtext")
+                }
+            } label: {
                 Image(systemName: "ellipsis")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(AppTheme.Colors.textPrimary)
@@ -629,6 +652,178 @@ struct PackDetailView: View {
     private func deleteItem(selection: EditItemSelection) {
         guard sections.indices.contains(selection.sectionIndex) else { return }
         sections[selection.sectionIndex].items.removeAll { $0.id == selection.itemID }
+    }
+
+    private func shareAsText() {
+        shareItems = [textChecklist()]
+        showingShareSheet = true
+    }
+
+    private func exportPDF() {
+        guard purchaseManager.isProActive else {
+            showingPaywall = true
+            return
+        }
+        let pdfData = makePDFData()
+        let fileURL = FileManager.default.temporaryDirectory.appendingPathComponent(pdfFileName())
+        do {
+            try pdfData.write(to: fileURL, options: .atomic)
+            shareItems = [fileURL]
+            showingShareSheet = true
+        } catch {
+            shareItems = [textChecklist()]
+            showingShareSheet = true
+        }
+    }
+
+    private func textChecklist() -> String {
+        var lines: [String] = ["\(packName) Checklist", ""]
+        for section in sections {
+            lines.append(section.title)
+            for item in section.items {
+                let status = item.isPacked ? "[x]" : "[ ]"
+                var line = "\(status) \(item.name) (x\(item.quantity))"
+                if !item.note.isEmpty {
+                    line += " — \(item.note)"
+                }
+                lines.append(line)
+            }
+            lines.append("")
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    private func pdfFileName() -> String {
+        let safeName = packName.replacingOccurrences(of: "/", with: "-")
+        let baseName = safeName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return "\(baseName.isEmpty ? "PackOnce" : baseName).pdf"
+    }
+
+    private func makePDFData() -> Data {
+        let pageRect = CGRect(x: 0, y: 0, width: 612, height: 792)
+        let margin: CGFloat = 48
+        let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
+        return renderer.pdfData { context in
+            context.beginPage()
+            var yPosition = margin
+            let titleFont = UIFont.systemFont(ofSize: 24, weight: .bold)
+            let sectionFont = UIFont.systemFont(ofSize: 16, weight: .semibold)
+            let bodyFont = UIFont.systemFont(ofSize: 12, weight: .regular)
+            let titleColor = UIColor.label
+            let bodyColor = UIColor.secondaryLabel
+
+            yPosition = drawText(
+                packName,
+                font: titleFont,
+                color: titleColor,
+                at: yPosition,
+                context: context,
+                pageRect: pageRect,
+                margin: margin
+            )
+            yPosition += 12
+
+            for section in sections {
+                yPosition = drawText(
+                    section.title,
+                    font: sectionFont,
+                    color: titleColor,
+                    at: yPosition,
+                    context: context,
+                    pageRect: pageRect,
+                    margin: margin
+                )
+                yPosition += 6
+
+                for item in section.items {
+                    let status = item.isPacked ? "✓" : "○"
+                    var line = "\(status) \(item.name) (x\(item.quantity))"
+                    if !item.note.isEmpty {
+                        line += " — \(item.note)"
+                    }
+                    yPosition = drawText(
+                        line,
+                        font: bodyFont,
+                        color: bodyColor,
+                        at: yPosition,
+                        context: context,
+                        pageRect: pageRect,
+                        margin: margin
+                    )
+                }
+                yPosition += 10
+            }
+        }
+    }
+
+    private func drawText(
+        _ text: String,
+        font: UIFont,
+        color: UIColor,
+        at yPosition: CGFloat,
+        context: UIGraphicsPDFRendererContext,
+        pageRect: CGRect,
+        margin: CGFloat
+    ) -> CGFloat {
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.lineBreakMode = .byWordWrapping
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: color,
+            .paragraphStyle: paragraphStyle
+        ]
+        let maxWidth = pageRect.width - (margin * 2)
+        let boundingRect = (text as NSString).boundingRect(
+            with: CGSize(width: maxWidth, height: .greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin, .usesFontLeading],
+            attributes: attributes,
+            context: nil
+        )
+
+        if yPosition + boundingRect.height > pageRect.height - margin {
+            context.beginPage()
+            return drawText(
+                text,
+                font: font,
+                color: color,
+                at: margin,
+                context: context,
+                pageRect: pageRect,
+                margin: margin
+            )
+        }
+
+        let drawRect = CGRect(x: margin, y: yPosition, width: maxWidth, height: boundingRect.height)
+        (text as NSString).draw(in: drawRect, withAttributes: attributes)
+        return yPosition + boundingRect.height + 4
+    }
+}
+
+private struct PaywallStubView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZStack {
+            AppBackgroundView()
+            VStack(spacing: AppTheme.Spacing.lg) {
+                Text("PackOnce Pro")
+                    .font(AppTheme.Typography.title())
+                    .foregroundStyle(AppTheme.Colors.textPrimary)
+                Text("Unlock PDF exports and more with Pro.")
+                    .font(AppTheme.Typography.body())
+                    .foregroundStyle(AppTheme.Colors.textSecondary)
+                    .multilineTextAlignment(.center)
+                PrimaryCTAButton(title: "Close") {
+                    dismiss()
+                }
+            }
+            .padding(AppTheme.Spacing.xl)
+            .background(
+                RoundedRectangle(cornerRadius: AppTheme.Radii.xl)
+                    .fill(AppTheme.Colors.surface)
+            )
+            .padding(AppTheme.Spacing.xl)
+        }
     }
 }
 

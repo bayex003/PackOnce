@@ -20,7 +20,7 @@ struct PackDetailView: View {
     }
 
     @Bindable var pack: Pack
-    @ObservedObject var purchaseManager: PurchaseManager
+    let purchaseManager: PurchaseManager
     @Binding var exportPreference: ExportPreference
 
     @State private var selectedFilter: PackFilter = .all
@@ -1071,28 +1071,36 @@ private struct CategoryChip: View {
             Text(title)
                 .font(AppTheme.Typography.callout())
         }
-            .foregroundStyle(isSelected ? AppTheme.Colors.primary : AppTheme.Colors.textSecondary)
-            .padding(.horizontal, AppTheme.Spacing.lg)
-            .padding(.vertical, AppTheme.Spacing.sm)
-            .background(
-                RoundedRectangle(cornerRadius: AppTheme.Radii.md)
-                    .fill(isSelected ? AppTheme.Colors.primary.opacity(0.18) : AppTheme.Colors.surfaceElevated)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: AppTheme.Radii.md)
-                    .stroke(isSelected ? AppTheme.Colors.primary : Color.clear, lineWidth: 1)
-            )
-            .frame(minHeight: 44)
+        .foregroundStyle(isSelected ? AppTheme.Colors.primary : AppTheme.Colors.textSecondary)
+        .padding(.horizontal, AppTheme.Spacing.lg)
+        .padding(.vertical, AppTheme.Spacing.sm)
+        .background(
+            RoundedRectangle(cornerRadius: AppTheme.Radii.md)
+                .fill(isSelected ? AppTheme.Colors.primary.opacity(0.18) : AppTheme.Colors.surfaceElevated)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: AppTheme.Radii.md)
+                .stroke(isSelected ? AppTheme.Colors.primary : Color.clear, lineWidth: 1)
+        )
+        .frame(minHeight: 44)
     }
 }
 
 #Preview {
-    let container = try! ModelContainer(
-        for: [Pack.self, Template.self, TemplateItem.self, PackItem.self, Tag.self],
-        configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-    )
+    // Explicit Schema avoids type inference issues in previews
+    let schema = Schema([
+        Pack.self,
+        Template.self,
+        TemplateItem.self,
+        PackItem.self,
+        Tag.self
+    ])
+    let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: schema, configurations: configuration)
+
     DataSeeder.seedIfNeeded(context: container.mainContext)
     let pack = try! container.mainContext.fetch(FetchDescriptor<Pack>()).first!
+
     return NavigationStack {
         PackDetailView(
             pack: pack,
@@ -1102,3 +1110,4 @@ private struct CategoryChip: View {
     }
     .modelContainer(container)
 }
+

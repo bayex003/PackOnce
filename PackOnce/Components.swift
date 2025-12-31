@@ -160,6 +160,6 @@ struct FloatingActionButton: View {
                 .applyShadow(AppTheme.Shadows.glow)
         }
         .buttonStyle(.plain)
-        .frame(minHeight: 52, minWidth: 52)
+        .frame(minWidth: 52, minHeight: 52)
     }
 }

@@ -1,9 +1,15 @@
 import SwiftUI
+import SwiftData
 
 struct PacksView: View {
     @ObservedObject var purchaseManager: PurchaseManager
     @Binding var exportPreference: ExportPreference
     @State private var selectedFilter = "In Progress"
+    @State private var selectedPack: Pack?
+
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \Pack.createdAt, order: .reverse) private var packs: [Pack]
+    @Query(sort: \Template.title) private var templates: [Template]
 
     private let filters = ["In Progress", "Pinned", "Recent"]
 
@@ -30,6 +36,13 @@ struct PacksView: View {
                 newPackButton
             }
             .navigationBarHidden(true)
+            .navigationDestination(item: $selectedPack) { pack in
+                PackDetailView(
+                    pack: pack,
+                    purchaseManager: purchaseManager,
+                    exportPreference: $exportPreference
+                )
+            }
         }
     }
 
@@ -93,13 +106,9 @@ struct PacksView: View {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: AppTheme.Spacing.md) {
-                    ForEach(SampleData.quickStartTemplates) { template in
-                        NavigationLink {
-                            PackDetailView(
-                                packName: template.title,
-                                purchaseManager: purchaseManager,
-                                exportPreference: $exportPreference
-                            )
+                    ForEach(templates) { template in
+                        Button {
+                            selectedPack = createPack(from: template)
                         } label: {
                             QuickStartCard(template: template)
                         }
@@ -115,10 +124,10 @@ struct PacksView: View {
 
     private var packListSection: some View {
         VStack(spacing: AppTheme.Spacing.lg) {
-            ForEach(SampleData.packListEntries) { pack in
+            ForEach(filteredPacks) { pack in
                 NavigationLink {
                     PackDetailView(
-                        packName: pack.name,
+                        pack: pack,
                         purchaseManager: purchaseManager,
                         exportPreference: $exportPreference
                     )
@@ -149,6 +158,56 @@ struct PacksView: View {
         .buttonStyle(.plain)
         .padding(.bottom, AppTheme.Spacing.xl)
     }
+
+    private var filteredPacks: [Pack] {
+        switch selectedFilter {
+        case "Pinned":
+            return packs.filter { $0.isPinned }
+        case "Recent":
+            return packs.sorted { $0.createdAt > $1.createdAt }
+        default:
+            return packs.filter { $0.packedQuantity < $0.totalQuantity }
+        }
+    }
+
+    private func createPack(from template: Template) -> Pack {
+        let tag = fetchTag(named: "TRAVEL")
+        let pack = Pack(
+            name: template.title,
+            tag: tag,
+            subtitle: "New pack",
+            subtitleIcon: "calendar",
+            subtitleAccent: "muted",
+            showProgressRing: false,
+            isPinned: false,
+            showsProgressBar: true,
+            showsStatusLabel: false,
+            template: template
+        )
+
+        let items = template.items.map { templateItem in
+            PackItem(
+                name: templateItem.name,
+                quantity: templateItem.quantity,
+                category: templateItem.category,
+                note: templateItem.note,
+                isPacked: false,
+                isPinned: templateItem.isPinned,
+                isLastMinute: templateItem.isLastMinute,
+                templateItem: templateItem,
+                pack: pack
+            )
+        }
+
+        pack.items.append(contentsOf: items)
+        modelContext.insert(pack)
+        return pack
+    }
+
+    private func fetchTag(named name: String) -> Tag? {
+        let descriptor = FetchDescriptor<Tag>(predicate: #Predicate { $0.name == name })
+        return (try? modelContext.fetch(descriptor))?.first
+    }
 }
 
 private struct FilterChip: View {
@@ -168,7 +227,7 @@ private struct FilterChip: View {
 }
 
 private struct QuickStartCard: View {
-    let template: QuickStartTemplate
+    let template: Template
 
     var body: some View {
         HStack(spacing: AppTheme.Spacing.sm) {
@@ -237,7 +296,7 @@ private struct QuickStartAddButton: View {
 }
 
 private struct PackCard: View {
-    let entry: PackListEntry
+    let entry: Pack
 
     var body: some View {
         CardContainer {
@@ -248,7 +307,7 @@ private struct PackCard: View {
                             Text(entry.name)
                                 .font(AppTheme.Typography.headline())
                                 .foregroundStyle(AppTheme.Colors.textPrimary)
-                            TagBadgeView(title: entry.tag)
+                            TagBadgeView(title: entry.tagName)
                         }
 
                         HStack(spacing: AppTheme.Spacing.xs) {
@@ -268,14 +327,14 @@ private struct PackCard: View {
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundStyle(AppTheme.Colors.primaryMuted)
                     } else {
-                        Text("\(entry.packedCount)/\(entry.totalCount)")
+                        Text("\(entry.packedQuantity)/\(entry.totalQuantity)")
                             .font(AppTheme.Typography.callout())
                             .foregroundStyle(AppTheme.Colors.textSecondary)
                     }
                 }
 
                 if entry.showProgressRing {
-                    Text("\(entry.packedCount)/\(entry.totalCount) Packed")
+                    Text("\(entry.packedQuantity)/\(entry.totalQuantity) Packed")
                         .font(AppTheme.Typography.caption())
                         .foregroundStyle(AppTheme.Colors.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .trailing)
@@ -413,5 +472,9 @@ private struct LastMinuteAddsView: View {
 }
 
 #Preview {
-    PacksView()
+    PacksView(
+        purchaseManager: PurchaseManager(),
+        exportPreference: .constant(.pdf)
+    )
+    .modelContainer(for: [Pack.self, Template.self, TemplateItem.self, PackItem.self, Tag.self], inMemory: true)
 }

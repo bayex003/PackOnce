@@ -3,9 +3,10 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var purchaseManager: PurchaseManager
     @Binding var exportPreference: ExportPreference
-    @State private var moveCheckedToBottom = true
-    @State private var hapticFeedback = true
-    @State private var uncheckAllOnReset = false
+    @AppStorage("settings.moveCheckedToBottom") private var moveCheckedToBottom = true
+    @AppStorage("settings.hapticsEnabled") private var hapticFeedback = true
+    @AppStorage("settings.uncheckAllOnReset") private var uncheckAllOnReset = false
+    @AppStorage("settings.collapsePacked") private var collapsePacked = false
     @State private var showRestoreAlert = false
 
     var body: some View {
@@ -27,6 +28,17 @@ struct SettingsView: View {
                             icon: "iphone.radiowaves.left.and.right",
                             title: "Haptic Feedback",
                             isOn: $hapticFeedback
+                        )
+                        .onChange(of: hapticFeedback) { _, newValue in
+                            if newValue {
+                                Haptics.impact(.light)
+                            }
+                        }
+                        SettingsDivider()
+                        SettingsToggleRow(
+                            icon: "rectangle.compress.vertical",
+                            title: "Collapse packed items",
+                            isOn: $collapsePacked
                         )
                         SettingsDivider()
                         SettingsToggleRow(
@@ -134,14 +146,15 @@ struct SettingsView: View {
 
             Button {} label: {
                 Text("Manage Subscription")
-                    .font(AppTheme.Typography.callout())
-                    .foregroundStyle(AppTheme.Colors.primary)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, AppTheme.Spacing.sm)
-                    .background(
-                        RoundedRectangle(cornerRadius: AppTheme.Radii.md)
-                            .stroke(AppTheme.Colors.primary.opacity(0.6), lineWidth: 1)
-                    )
+            .font(AppTheme.Typography.callout())
+            .foregroundStyle(AppTheme.Colors.primary)
+            .frame(maxWidth: .infinity)
+            .frame(minHeight: 44)
+            .padding(.vertical, AppTheme.Spacing.sm)
+            .background(
+                RoundedRectangle(cornerRadius: AppTheme.Radii.md)
+                    .stroke(AppTheme.Colors.primary.opacity(0.6), lineWidth: 1)
+            )
             }
             .buttonStyle(.plain)
         }
@@ -172,7 +185,9 @@ struct SettingsView: View {
                 .foregroundStyle(AppTheme.Colors.textSecondary)
             HStack(spacing: AppTheme.Spacing.lg) {
                 Button("Privacy Policy") {}
+                    .padding(.vertical, 6)
                 Button("Terms of Service") {}
+                    .padding(.vertical, 6)
             }
             .font(AppTheme.Typography.caption())
             .foregroundStyle(AppTheme.Colors.textSecondary)
@@ -195,9 +210,9 @@ private struct SettingsSection<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
             Text(title)
-                .font(AppTheme.Typography.caption())
-                .foregroundStyle(AppTheme.Colors.textSecondary)
-                .tracking(1.5)
+            .font(AppTheme.Typography.caption())
+            .foregroundStyle(AppTheme.Colors.textSecondary)
+            .tracking(1.5)
             content
         }
     }
@@ -230,7 +245,7 @@ private struct SettingsDivider: View {
     var body: some View {
         Divider()
             .background(AppTheme.Colors.surfaceBorder)
-            .padding(.leading, AppTheme.Spacing.lg + 36)
+            .padding(.leading, AppTheme.Spacing.lg + 40)
     }
 }
 
@@ -245,13 +260,16 @@ private struct SettingsToggleRow: View {
             Text(title)
                 .font(AppTheme.Typography.callout())
                 .foregroundStyle(AppTheme.Colors.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
             Spacer()
             Toggle("", isOn: $isOn)
                 .labelsHidden()
                 .tint(AppTheme.Colors.primary)
+                .accessibilityLabel(Text(title))
         }
         .padding(.horizontal, AppTheme.Spacing.lg)
         .padding(.vertical, AppTheme.Spacing.md)
+        .frame(minHeight: 52)
     }
 }
 
@@ -293,10 +311,12 @@ private struct SettingsActionRow: View {
                     Text(title)
                         .font(AppTheme.Typography.callout())
                         .foregroundStyle(titleColor)
+                        .fixedSize(horizontal: false, vertical: true)
                     if let subtitle {
                         Text(subtitle)
                             .font(AppTheme.Typography.caption())
                             .foregroundStyle(AppTheme.Colors.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
                 Spacer()
@@ -313,11 +333,12 @@ private struct SettingsActionRow: View {
                 if showsChevron {
                     Image(systemName: "chevron.right")
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(AppTheme.Colors.surfaceBorder)
+                        .foregroundStyle(AppTheme.Colors.textSecondary)
                 }
             }
             .padding(.horizontal, AppTheme.Spacing.lg)
             .padding(.vertical, AppTheme.Spacing.md)
+            .frame(minHeight: 52)
         }
         .buttonStyle(.plain)
     }
@@ -330,7 +351,7 @@ private struct SettingsIcon: View {
         ZStack {
             RoundedRectangle(cornerRadius: AppTheme.Radii.sm)
                 .fill(AppTheme.Colors.surfaceElevated)
-                .frame(width: 36, height: 36)
+                .frame(width: 40, height: 40)
             Image(systemName: icon)
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(AppTheme.Colors.textPrimary)

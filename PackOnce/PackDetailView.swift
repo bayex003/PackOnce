@@ -24,7 +24,9 @@ struct PackDetailView: View {
     @Binding var exportPreference: ExportPreference
 
     @State private var selectedFilter: PackFilter = .all
-    @State private var moveCheckedToBottom: Bool = true
+    @AppStorage("settings.moveCheckedToBottom") private var moveCheckedToBottom = true
+    @AppStorage("settings.hapticsEnabled") private var hapticsEnabled = true
+    @AppStorage("settings.collapsePacked") private var collapsePacked = false
     @State private var addItemText: String = ""
     @State private var editSelection: EditItemSelection?
     @State private var showingShareSheet = false
@@ -108,7 +110,7 @@ struct PackDetailView: View {
     }
 
     private var header: some View {
-        HStack {
+        HStack(spacing: AppTheme.Spacing.md) {
             Button {
                 dismiss()
             } label: {
@@ -127,6 +129,10 @@ struct PackDetailView: View {
             Text(pack.name)
                 .font(AppTheme.Typography.headline())
                 .foregroundStyle(AppTheme.Colors.textPrimary)
+                .lineLimit(2)
+                .minimumScaleFactor(0.85)
+                .multilineTextAlignment(.center)
+                .layoutPriority(1)
 
             Spacer()
 
@@ -194,6 +200,7 @@ struct PackDetailView: View {
                             RoundedRectangle(cornerRadius: AppTheme.Radii.md)
                                 .fill(selectedFilter == filter ? AppTheme.Colors.surface : AppTheme.Colors.surfaceElevated)
                         )
+                        .frame(minHeight: 44)
                 }
                 .buttonStyle(.plain)
             }
@@ -269,33 +276,50 @@ struct PackDetailView: View {
         VStack(spacing: AppTheme.Spacing.xl) {
             ForEach(sections) { section in
                 let visibleItems = visibleItems(for: section)
+                let packedCount = section.items.filter { $0.isPacked }.count
+                let showsCollapsedHint = collapsePacked && selectedFilter == .all && packedCount > 0
 
-                if !visibleItems.isEmpty {
+                if !visibleItems.isEmpty || showsCollapsedHint {
                     VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
                         if section.isLastMinute {
-                            lastMinuteCard(items: visibleItems)
+                            if !visibleItems.isEmpty {
+                                lastMinuteCard(items: visibleItems)
+                            } else if showsCollapsedHint {
+                                Text("\(packedCount) packed item\(packedCount == 1 ? "" : "s") hidden")
+                                    .font(AppTheme.Typography.caption())
+                                    .foregroundStyle(AppTheme.Colors.textSecondary)
+                                    .padding(.horizontal, AppTheme.Spacing.sm)
+                            }
                         } else {
                             sectionHeader(for: section)
 
-                            VStack(spacing: 0) {
-                                ForEach(visibleItems) { item in
-                                    checklistRow(item: item)
+                            if !visibleItems.isEmpty {
+                                VStack(spacing: 0) {
+                                    ForEach(visibleItems) { item in
+                                        checklistRow(item: item)
 
-                                    if item.id != visibleItems.last?.id {
-                                        Divider()
-                                            .background(AppTheme.Colors.surfaceBorder)
-                                            .padding(.leading, 48)
+                                        if item.id != visibleItems.last?.id {
+                                            Divider()
+                                                .background(AppTheme.Colors.surfaceBorder)
+                                                .padding(.leading, 48)
+                                        }
                                     }
                                 }
+                                .background(
+                                    RoundedRectangle(cornerRadius: AppTheme.Radii.lg)
+                                        .fill(AppTheme.Colors.surface.opacity(0.4))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: AppTheme.Radii.lg)
+                                                .stroke(AppTheme.Colors.surfaceBorder, lineWidth: 1)
+                                        )
+                                )
                             }
-                            .background(
-                                RoundedRectangle(cornerRadius: AppTheme.Radii.lg)
-                                    .fill(AppTheme.Colors.surface.opacity(0.4))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: AppTheme.Radii.lg)
-                                            .stroke(AppTheme.Colors.surfaceBorder, lineWidth: 1)
-                                    )
-                            )
+                            if showsCollapsedHint {
+                                Text("\(packedCount) packed item\(packedCount == 1 ? "" : "s") hidden")
+                                    .font(AppTheme.Typography.caption())
+                                    .foregroundStyle(AppTheme.Colors.textSecondary)
+                                    .padding(.horizontal, AppTheme.Spacing.sm)
+                            }
                         }
                     }
                 }
@@ -352,36 +376,39 @@ struct PackDetailView: View {
 
     private func checklistRow(item: PackItem, usesWarningStyle: Bool = false) -> some View {
         HStack(alignment: .top, spacing: AppTheme.Spacing.md) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 6)
-                    .stroke(usesWarningStyle ? AppTheme.Colors.warning : AppTheme.Colors.primaryMuted, lineWidth: 2)
-                    .frame(width: 24, height: 24)
-                    .background(
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(item.isPacked ? AppTheme.Colors.primary : Color.clear)
-                    )
-                if item.isPacked {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(.black)
+            Button {
+                toggleItem(itemID: item.id)
+            } label: {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(usesWarningStyle ? AppTheme.Colors.warning : AppTheme.Colors.primaryMuted, lineWidth: 2)
+                        .frame(width: 28, height: 28)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(item.isPacked ? AppTheme.Colors.primary : Color.clear)
+                        )
+                    if item.isPacked {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(.black)
+                    }
                 }
+                .frame(width: 44, height: 44)
             }
-            .contentShape(Rectangle())
-            .highPriorityGesture(
-                TapGesture().onEnded {
-                    toggleItem(itemID: item.id)
-                }
-            )
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text(item.isPacked ? "Unpack \(item.name)" : "Pack \(item.name)"))
 
             VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
                 Text(item.name)
                     .font(AppTheme.Typography.body())
                     .foregroundStyle(AppTheme.Colors.textPrimary.opacity(item.isPacked ? 0.5 : 1))
                     .strikethrough(item.isPacked, color: AppTheme.Colors.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
                 if let subtitle = subtitleText(for: item) {
                     Text(subtitle)
                         .font(AppTheme.Typography.caption())
                         .foregroundStyle(usesWarningStyle ? AppTheme.Colors.warning : AppTheme.Colors.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
 
@@ -389,6 +416,7 @@ struct PackDetailView: View {
         }
         .padding(.horizontal, AppTheme.Spacing.lg)
         .padding(.vertical, AppTheme.Spacing.md)
+        .frame(minHeight: 56)
         .contentShape(Rectangle())
         .onTapGesture {
             editSelection = EditItemSelection(itemID: item.id)
@@ -405,6 +433,7 @@ struct PackDetailView: View {
                 .background(
                     Capsule().fill(AppTheme.Colors.surface)
                 )
+                .frame(minHeight: 48)
 
             Button {
                 addItem()
@@ -445,6 +474,9 @@ struct PackDetailView: View {
         pack.items.append(newItem)
         modelContext.insert(newItem)
         addItemText = ""
+        if hapticsEnabled {
+            Haptics.notify(.success)
+        }
     }
 
     private func subtitleText(for item: PackItem) -> String? {
@@ -466,6 +498,10 @@ struct PackDetailView: View {
             items = items.filter { $0.isPacked }
         }
 
+        if collapsePacked, selectedFilter == .all {
+            items = items.filter { !$0.isPacked }
+        }
+
         if moveCheckedToBottom {
             items.sort { lhs, rhs in
                 if lhs.isPacked == rhs.isPacked {
@@ -480,6 +516,9 @@ struct PackDetailView: View {
     private func toggleItem(itemID: UUID) {
         guard let item = pack.items.first(where: { $0.id == itemID }) else { return }
         item.isPacked.toggle()
+        if hapticsEnabled {
+            Haptics.impact(.medium)
+        }
     }
 
     private func itemForSelection(_ selection: EditItemSelection) -> PackItem? {
@@ -665,16 +704,17 @@ private struct PaywallStubView: View {
         ZStack {
             AppBackgroundView()
             VStack(spacing: AppTheme.Spacing.lg) {
-                Text("PackOnce Pro")
-                    .font(AppTheme.Typography.title())
-                    .foregroundStyle(AppTheme.Colors.textPrimary)
-                Text("Unlock PDF exports and more with Pro.")
-                    .font(AppTheme.Typography.body())
-                    .foregroundStyle(AppTheme.Colors.textSecondary)
-                    .multilineTextAlignment(.center)
-                PrimaryCTAButton(title: "Close") {
-                    dismiss()
-                }
+            Text("PackOnce Pro")
+                .font(AppTheme.Typography.title())
+                .foregroundStyle(AppTheme.Colors.textPrimary)
+            Text("Unlock PDF exports and more with Pro.")
+                .font(AppTheme.Typography.body())
+                .foregroundStyle(AppTheme.Colors.textSecondary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+            PrimaryCTAButton(title: "Close") {
+                dismiss()
+            }
             }
             .padding(AppTheme.Spacing.xl)
             .background(
@@ -800,6 +840,7 @@ private struct EditItemView: View {
             Text(itemName)
                 .font(.system(size: 32, weight: .semibold, design: .rounded))
                 .foregroundStyle(AppTheme.Colors.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(AppTheme.Spacing.lg)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -883,6 +924,7 @@ private struct EditItemView: View {
                 RoundedRectangle(cornerRadius: AppTheme.Radii.md)
                     .fill(AppTheme.Colors.surfaceElevated)
             )
+            .frame(minHeight: 52)
         }
         .buttonStyle(.plain)
     }
@@ -979,6 +1021,7 @@ private struct EditItemView: View {
                         .foregroundStyle(AppTheme.Colors.textSecondary.opacity(0.6))
                         .padding(.horizontal, AppTheme.Spacing.sm)
                         .padding(.vertical, AppTheme.Spacing.sm)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 TextEditor(text: $notes)
@@ -1028,17 +1071,18 @@ private struct CategoryChip: View {
             Text(title)
                 .font(AppTheme.Typography.callout())
         }
-        .foregroundStyle(isSelected ? AppTheme.Colors.primary : AppTheme.Colors.textSecondary)
-        .padding(.horizontal, AppTheme.Spacing.lg)
-        .padding(.vertical, AppTheme.Spacing.sm)
-        .background(
-            RoundedRectangle(cornerRadius: AppTheme.Radii.md)
-                .fill(isSelected ? AppTheme.Colors.primary.opacity(0.18) : AppTheme.Colors.surfaceElevated)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: AppTheme.Radii.md)
-                .stroke(isSelected ? AppTheme.Colors.primary : Color.clear, lineWidth: 1)
-        )
+            .foregroundStyle(isSelected ? AppTheme.Colors.primary : AppTheme.Colors.textSecondary)
+            .padding(.horizontal, AppTheme.Spacing.lg)
+            .padding(.vertical, AppTheme.Spacing.sm)
+            .background(
+                RoundedRectangle(cornerRadius: AppTheme.Radii.md)
+                    .fill(isSelected ? AppTheme.Colors.primary.opacity(0.18) : AppTheme.Colors.surfaceElevated)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: AppTheme.Radii.md)
+                    .stroke(isSelected ? AppTheme.Colors.primary : Color.clear, lineWidth: 1)
+            )
+            .frame(minHeight: 44)
     }
 }
 

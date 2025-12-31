@@ -1,6 +1,9 @@
 import SwiftUI
+import SwiftData
 
 struct PacksPlaceholderView: View {
+    @Query(sort: \Pack.createdAt, order: .reverse) private var packs: [Pack]
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AppTheme.Spacing.lg) {
@@ -11,22 +14,20 @@ struct PacksPlaceholderView: View {
                     PillSegment(title: "Archived", isSelected: false)
                 }
 
-                ForEach(SampleData.packs) { pack in
+                ForEach(packs) { pack in
                     CardContainer {
                         HStack(spacing: AppTheme.Spacing.lg) {
-                            ProgressRing(progress: pack.completion)
+                            ProgressRing(progress: pack.progress)
 
                             VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
                                 Text(pack.name)
                                     .font(AppTheme.Typography.headline())
                                     .foregroundStyle(AppTheme.Colors.textPrimary)
-                                Text("\(pack.itemCount) items • \(Int(pack.completion * 100))% packed")
+                                Text("\(pack.totalQuantity) items • \(Int(pack.progress * 100))% packed")
                                     .font(AppTheme.Typography.caption())
                                     .foregroundStyle(AppTheme.Colors.textSecondary)
                                 HStack(spacing: AppTheme.Spacing.sm) {
-                                    ForEach(pack.tags, id: \.self) { tag in
-                                        TagBadge(title: tag)
-                                    }
+                                    TagBadge(title: pack.tagName)
                                 }
                             }
                             Spacer()
@@ -288,4 +289,5 @@ struct TemplatesPlaceholderView: View {
 
 #Preview {
     PacksPlaceholderView()
+        .modelContainer(for: [Pack.self, Template.self, TemplateItem.self, PackItem.self, Tag.self], inMemory: true)
 }

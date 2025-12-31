@@ -1,49 +1,183 @@
 import Foundation
+import SwiftData
 
-struct Pack: Identifiable {
-    let id = UUID()
-    let name: String
-    let itemCount: Int
-    let completion: Double
-    let tags: [String]
+@Model
+final class Tag {
+    var id: UUID
+    var name: String
+
+    init(id: UUID = UUID(), name: String) {
+        self.id = id
+        self.name = name
+    }
 }
 
-struct Template: Identifiable {
-    let id = UUID()
-    let title: String
-    let description: String
-    let category: String
+@Model
+final class Template {
+    var id: UUID
+    var title: String
+    var summary: String
+    var category: String
+    var icon: String
+    var accent: String
+    @Relationship(deleteRule: .cascade) var items: [TemplateItem]
+
+    init(
+        id: UUID = UUID(),
+        title: String,
+        summary: String,
+        category: String,
+        icon: String,
+        accent: String,
+        items: [TemplateItem] = []
+    ) {
+        self.id = id
+        self.title = title
+        self.summary = summary
+        self.category = category
+        self.icon = icon
+        self.accent = accent
+        self.items = items
+    }
 }
 
-struct PackItem: Identifiable {
-    let id = UUID()
-    let name: String
-    let quantity: Int
-    let isPacked: Bool
+@Model
+final class TemplateItem {
+    var id: UUID
+    var name: String
+    var quantity: Int
+    var category: String
+    var note: String
+    var isPinned: Bool
+    var isLastMinute: Bool
+    @Relationship(inverse: \Template.items) var template: Template?
+
+    init(
+        id: UUID = UUID(),
+        name: String,
+        quantity: Int,
+        category: String,
+        note: String,
+        isPinned: Bool,
+        isLastMinute: Bool,
+        template: Template? = nil
+    ) {
+        self.id = id
+        self.name = name
+        self.quantity = quantity
+        self.category = category
+        self.note = note
+        self.isPinned = isPinned
+        self.isLastMinute = isLastMinute
+        self.template = template
+    }
 }
 
-struct PackListEntry: Identifiable {
-    let id = UUID()
-    let name: String
-    let tag: String
-    let subtitle: String
-    let subtitleIcon: String
-    let subtitleAccent: String
-    let packedCount: Int
-    let totalCount: Int
-    let progress: Double
-    let showProgressRing: Bool
-    let lastMinuteAdds: Int?
-    let isPinned: Bool
-    let showsProgressBar: Bool
-    let showsStatusLabel: Bool
+@Model
+final class Pack {
+    var id: UUID
+    var name: String
+    var createdAt: Date
+    var tag: Tag?
+    var subtitle: String
+    var subtitleIcon: String
+    var subtitleAccent: String
+    var showProgressRing: Bool
+    var isPinned: Bool
+    var showsProgressBar: Bool
+    var showsStatusLabel: Bool
+    var template: Template?
+    @Relationship(deleteRule: .cascade) var items: [PackItem]
+
+    init(
+        id: UUID = UUID(),
+        name: String,
+        createdAt: Date = Date(),
+        tag: Tag? = nil,
+        subtitle: String,
+        subtitleIcon: String,
+        subtitleAccent: String,
+        showProgressRing: Bool,
+        isPinned: Bool,
+        showsProgressBar: Bool,
+        showsStatusLabel: Bool,
+        template: Template? = nil,
+        items: [PackItem] = []
+    ) {
+        self.id = id
+        self.name = name
+        self.createdAt = createdAt
+        self.tag = tag
+        self.subtitle = subtitle
+        self.subtitleIcon = subtitleIcon
+        self.subtitleAccent = subtitleAccent
+        self.showProgressRing = showProgressRing
+        self.isPinned = isPinned
+        self.showsProgressBar = showsProgressBar
+        self.showsStatusLabel = showsStatusLabel
+        self.template = template
+        self.items = items
+    }
+
+    var totalQuantity: Int {
+        items.reduce(0) { $0 + max($1.quantity, 0) }
+    }
+
+    var packedQuantity: Int {
+        items.reduce(0) { $0 + ($1.isPacked ? max($1.quantity, 0) : 0) }
+    }
+
+    var progress: Double {
+        guard totalQuantity > 0 else { return 0 }
+        return Double(packedQuantity) / Double(totalQuantity)
+    }
+
+    var tagName: String {
+        tag?.name ?? "TRAVEL"
+    }
+
+    var lastMinuteAdds: Int? {
+        let count = items.filter { $0.isLastMinute && !$0.isPacked }.count
+        return count > 0 ? count : nil
+    }
 }
 
-struct QuickStartTemplate: Identifiable {
-    let id = UUID()
-    let title: String
-    let icon: String
-    let accent: String
+@Model
+final class PackItem {
+    var id: UUID
+    var name: String
+    var quantity: Int
+    var category: String
+    var note: String
+    var isPacked: Bool
+    var isPinned: Bool
+    var isLastMinute: Bool
+    var templateItem: TemplateItem?
+    @Relationship(inverse: \Pack.items) var pack: Pack?
+
+    init(
+        id: UUID = UUID(),
+        name: String,
+        quantity: Int,
+        category: String,
+        note: String,
+        isPacked: Bool,
+        isPinned: Bool,
+        isLastMinute: Bool,
+        templateItem: TemplateItem? = nil,
+        pack: Pack? = nil
+    ) {
+        self.id = id
+        self.name = name
+        self.quantity = quantity
+        self.category = category
+        self.note = note
+        self.isPacked = isPacked
+        self.isPinned = isPinned
+        self.isLastMinute = isLastMinute
+        self.templateItem = templateItem
+        self.pack = pack
+    }
 }
 
 enum ExportPreference: String, CaseIterable {
@@ -53,94 +187,4 @@ enum ExportPreference: String, CaseIterable {
     mutating func toggle() {
         self = self == .text ? .pdf : .text
     }
-}
-
-enum SampleData {
-    static let packs: [Pack] = [
-        Pack(name: "Alpine Escape", itemCount: 18, completion: 0.72, tags: ["Hiking", "Cold"]),
-        Pack(name: "Weekend Studio", itemCount: 12, completion: 0.4, tags: ["Creative", "Light"]),
-        Pack(name: "Conference Kit", itemCount: 9, completion: 0.88, tags: ["Work", "Tech"])
-    ]
-
-    static let templates: [Template] = [
-        Template(title: "Urban Explorer", description: "City-ready essentials for quick trips.", category: "City"),
-        Template(title: "Trail Starter", description: "Base set for casual day hikes.", category: "Outdoors"),
-        Template(title: "Cabin Reset", description: "Cozy getaway with layered outfits.", category: "Retreat")
-    ]
-
-    static let packItems: [PackItem] = [
-        PackItem(name: "Insulated bottle", quantity: 1, isPacked: true),
-        PackItem(name: "Merino base layer", quantity: 2, isPacked: false),
-        PackItem(name: "Compact tripod", quantity: 1, isPacked: true)
-    ]
-
-    static let packListEntries: [PackListEntry] = [
-        PackListEntry(
-            name: "Tokyo Trip",
-            tag: "TRAVEL",
-            subtitle: "2 days left",
-            subtitleIcon: "calendar",
-            subtitleAccent: "muted",
-            packedCount: 36,
-            totalCount: 42,
-            progress: 0.85,
-            showProgressRing: true,
-            lastMinuteAdds: nil,
-            isPinned: false,
-            showsProgressBar: false,
-            showsStatusLabel: false
-        ),
-        PackListEntry(
-            name: "Weekly Gym",
-            tag: "FITNESS",
-            subtitle: "Today, 6:00 PM",
-            subtitleIcon: "clock.fill",
-            subtitleAccent: "warning",
-            packedCount: 0,
-            totalCount: 12,
-            progress: 0.0,
-            showProgressRing: false,
-            lastMinuteAdds: 1,
-            isPinned: false,
-            showsProgressBar: true,
-            showsStatusLabel: false
-        ),
-        PackListEntry(
-            name: "Baby Bag",
-            tag: "FAMILY",
-            subtitle: "Always Active",
-            subtitleIcon: "arrow.triangle.2.circlepath",
-            subtitleAccent: "muted",
-            packedCount: 18,
-            totalCount: 25,
-            progress: 0.72,
-            showProgressRing: false,
-            lastMinuteAdds: 2,
-            isPinned: false,
-            showsProgressBar: true,
-            showsStatusLabel: false
-        ),
-        PackListEntry(
-            name: "Weekend Hike",
-            tag: "OUTDOOR",
-            subtitle: "Next Sunday",
-            subtitleIcon: "calendar",
-            subtitleAccent: "muted",
-            packedCount: 0,
-            totalCount: 0,
-            progress: 0.0,
-            showProgressRing: false,
-            lastMinuteAdds: nil,
-            isPinned: true,
-            showsProgressBar: false,
-            showsStatusLabel: true
-        )
-    ]
-
-    static let quickStartTemplates: [QuickStartTemplate] = [
-        QuickStartTemplate(title: "Gym", icon: "dumbbell.fill", accent: "orange"),
-        QuickStartTemplate(title: "Trip", icon: "airplane", accent: "blue"),
-        QuickStartTemplate(title: "Work", icon: "briefcase.fill", accent: "purple"),
-        QuickStartTemplate(title: "Beach", icon: "sun.max.fill", accent: "teal")
-    ]
 }

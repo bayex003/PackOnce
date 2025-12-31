@@ -1,31 +1,14 @@
 import SwiftUI
+import SwiftData
 import UIKit
 
 struct PackDetailView: View {
-    struct PackDetailItem: Identifiable {
-        let id = UUID()
-        let name: String
-        var quantity: Int
-        var category: String
-        var note: String
-        var isPacked: Bool
-        let templateItemID: UUID?
-    }
-
     struct PackDetailSection: Identifiable {
         let id = UUID()
         let title: String
         let isPinned: Bool
         let isLastMinute: Bool
-        var items: [PackDetailItem]
-    }
-
-    struct TemplateItem: Identifiable {
-        let id: UUID
-        let name: String
-        var quantity: Int
-        var category: String
-        var note: String
+        var items: [PackItem]
     }
 
     enum PackFilter: String, CaseIterable, Identifiable {
@@ -36,15 +19,9 @@ struct PackDetailView: View {
         var id: String { rawValue }
     }
 
-    let packName: String
+    @Bindable var pack: Pack
     @ObservedObject var purchaseManager: PurchaseManager
     @Binding var exportPreference: ExportPreference
-    private static let templateSeedItems: [TemplateItem] = [
-        TemplateItem(id: UUID(), name: "Passport", quantity: 1, category: "Essentials", note: "In top drawer"),
-        TemplateItem(id: UUID(), name: "Charger & Adapter", quantity: 1, category: "Tech", note: ""),
-        TemplateItem(id: UUID(), name: "T-Shirts", quantity: 5, category: "Clothes", note: ""),
-        TemplateItem(id: UUID(), name: "Socks", quantity: 7, category: "Clothes", note: "")
-    ]
 
     @State private var selectedFilter: PackFilter = .all
     @State private var moveCheckedToBottom: Bool = true
@@ -53,200 +30,12 @@ struct PackDetailView: View {
     @State private var showingShareSheet = false
     @State private var shareItems: [Any] = []
     @State private var showingPaywall = false
-    @State private var templateItems: [TemplateItem] = Self.templateSeedItems
-    @State private var sections: [PackDetailSection] = [
-        PackDetailSection(
-            title: "Essentials (Pinned)",
-            isPinned: true,
-            isLastMinute: false,
-            items: [
-                PackDetailItem(
-                    name: "Passport",
-                    quantity: 1,
-                    category: "Essentials",
-                    note: "In top drawer",
-                    isPacked: false,
-                    templateItemID: PackDetailView.templateSeedItems[0].id
-                ),
-                PackDetailItem(
-                    name: "Charger & Adapter",
-                    quantity: 1,
-                    category: "Tech",
-                    note: "",
-                    isPacked: false,
-                    templateItemID: PackDetailView.templateSeedItems[1].id
-                )
-            ]
-        ),
-        PackDetailSection(
-            title: "Last-Minute",
-            isPinned: false,
-            isLastMinute: true,
-            items: [
-                PackDetailItem(
-                    name: "Toothbrush",
-                    quantity: 1,
-                    category: "Toiletries",
-                    note: "Still wet, pack last",
-                    isPacked: false,
-                    templateItemID: nil
-                )
-            ]
-        ),
-        PackDetailSection(
-            title: "Clothing",
-            isPinned: false,
-            isLastMinute: false,
-            items: [
-                PackDetailItem(
-                    name: "T-Shirts",
-                    quantity: 5,
-                    category: "Clothes",
-                    note: "",
-                    isPacked: true,
-                    templateItemID: PackDetailView.templateSeedItems[2].id
-                ),
-                PackDetailItem(
-                    name: "Socks",
-                    quantity: 7,
-                    category: "Clothes",
-                    note: "",
-                    isPacked: false,
-                    templateItemID: PackDetailView.templateSeedItems[3].id
-                ),
-                PackDetailItem(
-                    name: "Swimwear",
-                    quantity: 2,
-                    category: "Clothes",
-                    note: "",
-                    isPacked: false,
-                    templateItemID: nil
-                )
-            ]
-        ),
-        PackDetailSection(
-            title: "Toiletries",
-            isPinned: false,
-            isLastMinute: false,
-            items: [
-                PackDetailItem(
-                    name: "Sunscreen",
-                    quantity: 1,
-                    category: "Toiletries",
-                    note: "",
-                    isPacked: true,
-                    templateItemID: nil
-                ),
-                PackDetailItem(
-                    name: "Razor",
-                    quantity: 1,
-                    category: "Toiletries",
-                    note: "",
-                    isPacked: true,
-                    templateItemID: nil
-                ),
-                PackDetailItem(
-                    name: "Skincare kit",
-                    quantity: 1,
-                    category: "Toiletries",
-                    note: "",
-                    isPacked: false,
-                    templateItemID: nil
-                )
-            ]
-        ),
-        PackDetailSection(
-            title: "Tech",
-            isPinned: false,
-            isLastMinute: false,
-            items: [
-                PackDetailItem(
-                    name: "Camera",
-                    quantity: 2,
-                    category: "Tech",
-                    note: "Charge battery",
-                    isPacked: true,
-                    templateItemID: nil
-                ),
-                PackDetailItem(
-                    name: "Earbuds",
-                    quantity: 2,
-                    category: "Tech",
-                    note: "",
-                    isPacked: false,
-                    templateItemID: nil
-                ),
-                PackDetailItem(
-                    name: "Power bank",
-                    quantity: 2,
-                    category: "Tech",
-                    note: "",
-                    isPacked: false,
-                    templateItemID: nil
-                ),
-                PackDetailItem(
-                    name: "E-reader",
-                    quantity: 2,
-                    category: "Tech",
-                    note: "",
-                    isPacked: true,
-                    templateItemID: nil
-                )
-            ]
-        ),
-        PackDetailSection(
-            title: "Extras",
-            isPinned: false,
-            isLastMinute: false,
-            items: [
-                PackDetailItem(
-                    name: "Travel journal",
-                    quantity: 2,
-                    category: "Extras",
-                    note: "",
-                    isPacked: true,
-                    templateItemID: nil
-                ),
-                PackDetailItem(
-                    name: "Reusable bag",
-                    quantity: 3,
-                    category: "Extras",
-                    note: "",
-                    isPacked: true,
-                    templateItemID: nil
-                ),
-                PackDetailItem(
-                    name: "Snacks",
-                    quantity: 4,
-                    category: "Extras",
-                    note: "Flight friendly",
-                    isPacked: false,
-                    templateItemID: nil
-                ),
-                PackDetailItem(
-                    name: "Compact umbrella",
-                    quantity: 2,
-                    category: "Extras",
-                    note: "",
-                    isPacked: true,
-                    templateItemID: nil
-                ),
-                PackDetailItem(
-                    name: "Guidebook",
-                    quantity: 3,
-                    category: "Extras",
-                    note: "",
-                    isPacked: false,
-                    templateItemID: nil
-                )
-            ]
-        )
-    ]
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
 
     private var packedTotals: (packed: Int, total: Int) {
-        let totals = sections.flatMap(\.items).reduce(into: (packed: 0, total: 0)) { result, item in
+        let totals = pack.items.reduce(into: (packed: 0, total: 0)) { result, item in
             result.total += item.quantity
             if item.isPacked {
                 result.packed += item.quantity
@@ -295,7 +84,7 @@ struct PackDetailView: View {
                     quantity: item.quantity,
                     category: item.category,
                     notes: item.note,
-                    showsTemplateOption: item.templateItemID != nil,
+                    showsTemplateOption: item.templateItem != nil,
                     onCancel: {
                         editSelection = nil
                     },
@@ -335,7 +124,7 @@ struct PackDetailView: View {
 
             Spacer()
 
-            Text(packName)
+            Text(pack.name)
                 .font(AppTheme.Typography.headline())
                 .foregroundStyle(AppTheme.Colors.textPrimary)
 
@@ -416,22 +205,81 @@ struct PackDetailView: View {
         )
     }
 
+    private var sections: [PackDetailSection] {
+        let pinnedItems = pack.items.filter { $0.isPinned && !$0.isLastMinute }
+        let lastMinuteItems = pack.items.filter { $0.isLastMinute }
+        let regularItems = pack.items.filter { !$0.isPinned && !$0.isLastMinute }
+        let preferredOrder = ["Essentials", "Clothes", "Toiletries", "Tech", "Extras"]
+
+        func sortedCategories(from items: [PackItem]) -> [String] {
+            let categories = Set(items.map { $0.category })
+            return categories.sorted { lhs, rhs in
+                let leftIndex = preferredOrder.firstIndex(of: lhs) ?? preferredOrder.count
+                let rightIndex = preferredOrder.firstIndex(of: rhs) ?? preferredOrder.count
+                if leftIndex == rightIndex {
+                    return lhs < rhs
+                }
+                return leftIndex < rightIndex
+            }
+        }
+
+        var sections: [PackDetailSection] = []
+
+        let pinnedCategories = sortedCategories(from: pinnedItems)
+        for category in pinnedCategories {
+            let items = pinnedItems.filter { $0.category == category }
+            sections.append(
+                PackDetailSection(
+                    title: "\(category) (Pinned)",
+                    isPinned: true,
+                    isLastMinute: false,
+                    items: items
+                )
+            )
+        }
+
+        if !lastMinuteItems.isEmpty {
+            sections.append(
+                PackDetailSection(
+                    title: "Last-Minute",
+                    isPinned: false,
+                    isLastMinute: true,
+                    items: lastMinuteItems
+                )
+            )
+        }
+
+        let regularCategories = sortedCategories(from: regularItems)
+        for category in regularCategories {
+            let items = regularItems.filter { $0.category == category }
+            sections.append(
+                PackDetailSection(
+                    title: category,
+                    isPinned: false,
+                    isLastMinute: false,
+                    items: items
+                )
+            )
+        }
+
+        return sections
+    }
+
     private var sectionsList: some View {
         VStack(spacing: AppTheme.Spacing.xl) {
-            ForEach(sections.indices, id: \.self) { sectionIndex in
-                let section = sections[sectionIndex]
+            ForEach(sections) { section in
                 let visibleItems = visibleItems(for: section)
 
                 if !visibleItems.isEmpty {
                     VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
                         if section.isLastMinute {
-                            lastMinuteCard(items: visibleItems, sectionIndex: sectionIndex)
+                            lastMinuteCard(items: visibleItems)
                         } else {
                             sectionHeader(for: section)
 
                             VStack(spacing: 0) {
                                 ForEach(visibleItems) { item in
-                                    checklistRow(item: item, sectionIndex: sectionIndex)
+                                    checklistRow(item: item)
 
                                     if item.id != visibleItems.last?.id {
                                         Divider()
@@ -468,7 +316,7 @@ struct PackDetailView: View {
         }
     }
 
-    private func lastMinuteCard(items: [PackDetailItem], sectionIndex: Int) -> some View {
+    private func lastMinuteCard(items: [PackItem]) -> some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
             HStack(spacing: AppTheme.Spacing.sm) {
                 Image(systemName: "clock.fill")
@@ -480,7 +328,7 @@ struct PackDetailView: View {
 
             VStack(spacing: 0) {
                 ForEach(items) { item in
-                    checklistRow(item: item, sectionIndex: sectionIndex, usesWarningStyle: true)
+                    checklistRow(item: item, usesWarningStyle: true)
 
                     if item.id != items.last?.id {
                         Divider()
@@ -502,7 +350,7 @@ struct PackDetailView: View {
         )
     }
 
-    private func checklistRow(item: PackDetailItem, sectionIndex: Int, usesWarningStyle: Bool = false) -> some View {
+    private func checklistRow(item: PackItem, usesWarningStyle: Bool = false) -> some View {
         HStack(alignment: .top, spacing: AppTheme.Spacing.md) {
             ZStack {
                 RoundedRectangle(cornerRadius: 6)
@@ -521,7 +369,7 @@ struct PackDetailView: View {
             .contentShape(Rectangle())
             .highPriorityGesture(
                 TapGesture().onEnded {
-                    toggleItem(sectionIndex: sectionIndex, itemID: item.id)
+                    toggleItem(itemID: item.id)
                 }
             )
 
@@ -543,7 +391,7 @@ struct PackDetailView: View {
         .padding(.vertical, AppTheme.Spacing.md)
         .contentShape(Rectangle())
         .onTapGesture {
-            editSelection = EditItemSelection(sectionIndex: sectionIndex, itemID: item.id)
+            editSelection = EditItemSelection(itemID: item.id)
         }
     }
 
@@ -559,7 +407,7 @@ struct PackDetailView: View {
                 )
 
             Button {
-                addItemText = ""
+                addItem()
             } label: {
                 Image(systemName: "plus")
                     .font(.system(size: 18, weight: .bold))
@@ -581,15 +429,33 @@ struct PackDetailView: View {
         )
     }
 
-    private func subtitleText(for item: PackDetailItem) -> String? {
+    private func addItem() {
+        let trimmed = addItemText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        let newItem = PackItem(
+            name: trimmed,
+            quantity: 1,
+            category: "Extras",
+            note: "",
+            isPacked: false,
+            isPinned: false,
+            isLastMinute: false,
+            pack: pack
+        )
+        pack.items.append(newItem)
+        modelContext.insert(newItem)
+        addItemText = ""
+    }
+
+    private func subtitleText(for item: PackItem) -> String? {
         var parts: [String] = ["Qty: \(item.quantity)"]
         if !item.note.isEmpty {
-            parts.append(note)
+            parts.append(item.note)
         }
         return parts.joined(separator: " • ")
     }
 
-    private func visibleItems(for section: PackDetailSection) -> [PackDetailItem] {
+    private func visibleItems(for section: PackDetailSection) -> [PackItem] {
         var items = section.items
         switch selectedFilter {
         case .all:
@@ -611,16 +477,13 @@ struct PackDetailView: View {
         return items
     }
 
-    private func toggleItem(sectionIndex: Int, itemID: UUID) {
-        guard sections.indices.contains(sectionIndex) else { return }
-        if let itemIndex = sections[sectionIndex].items.firstIndex(where: { $0.id == itemID }) {
-            sections[sectionIndex].items[itemIndex].isPacked.toggle()
-        }
+    private func toggleItem(itemID: UUID) {
+        guard let item = pack.items.first(where: { $0.id == itemID }) else { return }
+        item.isPacked.toggle()
     }
 
-    private func itemForSelection(_ selection: EditItemSelection) -> PackDetailItem? {
-        guard sections.indices.contains(selection.sectionIndex) else { return nil }
-        return sections[selection.sectionIndex].items.first { $0.id == selection.itemID }
+    private func itemForSelection(_ selection: EditItemSelection) -> PackItem? {
+        pack.items.first { $0.id == selection.itemID }
     }
 
     private func updateItem(
@@ -630,28 +493,24 @@ struct PackDetailView: View {
         note: String,
         applyToTemplate: Bool
     ) {
-        guard sections.indices.contains(selection.sectionIndex) else { return }
-        if let itemIndex = sections[selection.sectionIndex].items.firstIndex(where: { $0.id == selection.itemID }) {
-            sections[selection.sectionIndex].items[itemIndex].quantity = quantity
-            sections[selection.sectionIndex].items[itemIndex].category = category
-            sections[selection.sectionIndex].items[itemIndex].note = note
-            if applyToTemplate, let templateID = sections[selection.sectionIndex].items[itemIndex].templateItemID {
-                updateTemplateItem(templateID: templateID, quantity: quantity, category: category, note: note)
-            }
+        guard let item = pack.items.first(where: { $0.id == selection.itemID }) else { return }
+        item.quantity = quantity
+        item.category = category
+        item.note = note
+        if applyToTemplate, let templateItem = item.templateItem {
+            updateTemplateItem(templateItem: templateItem, quantity: quantity, category: category, note: note)
         }
     }
 
-    private func updateTemplateItem(templateID: UUID, quantity: Int, category: String, note: String) {
-        if let templateIndex = templateItems.firstIndex(where: { $0.id == templateID }) {
-            templateItems[templateIndex].quantity = quantity
-            templateItems[templateIndex].category = category
-            templateItems[templateIndex].note = note
-        }
+    private func updateTemplateItem(templateItem: TemplateItem, quantity: Int, category: String, note: String) {
+        templateItem.quantity = quantity
+        templateItem.category = category
+        templateItem.note = note
     }
 
     private func deleteItem(selection: EditItemSelection) {
-        guard sections.indices.contains(selection.sectionIndex) else { return }
-        sections[selection.sectionIndex].items.removeAll { $0.id == selection.itemID }
+        guard let item = pack.items.first(where: { $0.id == selection.itemID }) else { return }
+        modelContext.delete(item)
     }
 
     private func shareAsText() {
@@ -677,7 +536,7 @@ struct PackDetailView: View {
     }
 
     private func textChecklist() -> String {
-        var lines: [String] = ["\(packName) Checklist", ""]
+        var lines: [String] = ["\(pack.name) Checklist", ""]
         for section in sections {
             lines.append(section.title)
             for item in section.items {
@@ -694,7 +553,7 @@ struct PackDetailView: View {
     }
 
     private func pdfFileName() -> String {
-        let safeName = packName.replacingOccurrences(of: "/", with: "-")
+        let safeName = pack.name.replacingOccurrences(of: "/", with: "-")
         let baseName = safeName.trimmingCharacters(in: .whitespacesAndNewlines)
         return "\(baseName.isEmpty ? "PackOnce" : baseName).pdf"
     }
@@ -713,7 +572,7 @@ struct PackDetailView: View {
             let bodyColor = UIColor.secondaryLabel
 
             yPosition = drawText(
-                packName,
+                pack.name,
                 font: titleFont,
                 color: titleColor,
                 at: yPosition,
@@ -829,7 +688,6 @@ private struct PaywallStubView: View {
 
 private struct EditItemSelection: Identifiable {
     let id = UUID()
-    let sectionIndex: Int
     let itemID: UUID
 }
 
@@ -1185,7 +1043,18 @@ private struct CategoryChip: View {
 }
 
 #Preview {
-    NavigationStack {
-        PackDetailView(packName: "Europe Summer '24")
+    let container = try! ModelContainer(
+        for: [Pack.self, Template.self, TemplateItem.self, PackItem.self, Tag.self],
+        configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+    )
+    DataSeeder.seedIfNeeded(context: container.mainContext)
+    let pack = try! container.mainContext.fetch(FetchDescriptor<Pack>()).first!
+    return NavigationStack {
+        PackDetailView(
+            pack: pack,
+            purchaseManager: PurchaseManager(),
+            exportPreference: .constant(.pdf)
+        )
     }
+    .modelContainer(container)
 }

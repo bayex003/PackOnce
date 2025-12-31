@@ -87,4 +87,5 @@ struct CustomTabBar: View {
 
 #Preview {
     RootView()
+        .modelContainer(for: [Pack.self, Template.self, TemplateItem.self, PackItem.self, Tag.self], inMemory: true)
 }

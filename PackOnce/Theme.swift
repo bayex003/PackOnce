@@ -13,6 +13,8 @@ struct AppTheme {
         static let textSecondary = Color.white.opacity(0.74)
         static let accent = Color(red: 0.48, green: 0.64, blue: 1.0)
         static let warning = Color(red: 1.0, green: 0.75, blue: 0.4)
+        static let paperCream = Color(red: 0.98, green: 0.97, blue: 0.94)
+        static let sageGreen = Color(red: 0.33, green: 0.44, blue: 0.24)
     }
 
     struct Spacing {
@@ -51,6 +53,13 @@ struct AppTheme {
         static func body() -> Font { .system(size: 16, weight: .regular, design: .rounded) }
         static func callout() -> Font { .system(size: 14, weight: .medium, design: .rounded) }
         static func caption() -> Font { .system(size: 12, weight: .medium, design: .rounded) }
+    }
+}
+
+struct SerifTitle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.system(size: 30, weight: .semibold, design: .serif))
     }
 }
 

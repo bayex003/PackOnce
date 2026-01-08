@@ -3,7 +3,7 @@ import SwiftData
 
 @main
 struct PackOnceApp: App {
-    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+    @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
     private let container: ModelContainer = {
         let schema = Schema([Pack.self, Template.self, TemplateItem.self, PackItem.self, Tag.self])
         let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
@@ -12,13 +12,13 @@ struct PackOnceApp: App {
 
     var body: some Scene {
         WindowGroup {
-            if hasCompletedOnboarding {
+            if hasSeenOnboarding {
                 RootView()
                     .task {
                         DataSeeder.seedIfNeeded(context: container.mainContext)
                     }
             } else {
-                OnboardingView(hasCompletedOnboarding: $hasCompletedOnboarding)
+                OnboardingView()
             }
         }
         .modelContainer(container)
